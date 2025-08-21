@@ -2,6 +2,37 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
+from collections import defaultdict
+
+async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists(DATA_FILE):
+        await update.message.reply_text("Нет данных для отображения.")
+        return
+
+    ratings = defaultdict(lambda: defaultdict(list))
+
+    with open(DATA_FILE, "r") as f:
+        for line in f:
+            try:
+                bar, beer, score = line.strip().split(";")
+                ratings[bar][beer].append(int(score))
+            except ValueError:
+                continue
+
+    if not ratings:
+        await update.message.reply_text("Нет данных для отображения.")
+        return
+
+    response = "📊 Сводка по барам и пиву:\n"
+    for bar, beers in ratings.items():
+        response += f"\n🍺 Бар: {bar}\n"
+        for beer, scores in beers.items():
+            avg = sum(scores) / len(scores)
+            response += f"  - {beer}: {avg:.2f} (оценок: {len(scores)})\n"
+
+    await update.message.reply_text(response)
+
+
 DATA_FILE = "/mnt/data/ratings.txt"  # путь к файлу на Railway volume
 
 user_states = {}
