@@ -83,7 +83,7 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 bar, beer, score, user = line.strip().split(";")
                 score = int(score)
                 ratings[bar][beer].append(score)
-                user_scores[user].append(score
+                user_scores[user].append(score)
 
             except ValueError:
                 continue
