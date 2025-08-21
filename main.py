@@ -15,15 +15,6 @@ user_states = {}
 def capitalize(text):
     return text[:1].upper() + text[1:].lower()
 
-async def zerorating(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-        with open(DATA_FILE, "w") as f:
-            f.write("")  # очищаем содержимое
-        await update.message.reply_text("Файл с рейтингами очищен.")
-    except Exception as e:
-        await update.message.reply_text(f"Ошибка при очистке файла: {e}")
-
 async def bar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Введите название бара:")
     user_states[update.effective_user.id] = {"step": "bar"}
@@ -41,7 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state["step"] == "bar":
         state["bar"] = text.lower()
         state["step"] = "beer"
-        await update.message.reply_text("Введите название пива🍺:")
+        await update.message.reply_text("Введите название пива:")
     elif state["step"] == "beer":
         state["beer"] = text.lower()
         state["step"] = "score"
@@ -61,10 +52,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, "a") as f:
-            f.write(f"{bar};{beer};{score}{user}\n")
+            f.write(f"{bar};{beer};{score};{user}\n")
 
         await update.message.reply_text(
-            f"Оценка сохранена! Бар: {capitalize(bar)}, Пиво: {capitalize(beer)}, Оценка: {score}"
+            f"Оценка сохранена! Бар: {capitalize(bar)}, Пиво: {capitalize(beer)}, Оценка: {score}, Пользователь: {user}"
         )
         state["step"] = "beer"
         await update.message.reply_text("Введите название следующего пива или /bar для нового бара.")
@@ -84,7 +75,6 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 score = int(score)
                 ratings[bar][beer].append(score)
                 user_scores[user].append(score)
-
             except ValueError:
                 continue
 
@@ -99,8 +89,6 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
             avg = sum(scores) / len(scores)
             response += f"  - {capitalize(beer)}: {avg:.2f} (оценок: {len(scores)})\n"
 
-    
-    # 🏆 Пользователь с самой высокой средней оценкой
     best_user = None
     best_avg = -1
     for user, scores in user_scores.items():
@@ -110,9 +98,18 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
             best_user = user
 
     if best_user:
-        response += f"\n🏆 Пользователь с самой высокой средней оценкой: {best_user
+        response += f"\n🏆 Пользователь с самой высокой средней оценкой: {best_user} ({best_avg:.2f})"
 
     await update.message.reply_text(response)
+
+async def zerorating(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+        with open(DATA_FILE, "w") as f:
+            f.write("")
+        await update.message.reply_text("Файл с рейтингами очищен.")
+    except Exception as e:
+        await update.message.reply_text(f"Ошибка при очистке файла: {e}")
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
@@ -120,6 +117,4 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("summary", summary))
     app.add_handler(CommandHandler("zerorating", zerorating))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_message))
-
     app.run_polling()
