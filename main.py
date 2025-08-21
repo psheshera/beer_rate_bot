@@ -55,7 +55,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f.write(f"{bar};{beer};{score};{user}\n")
 
         await update.message.reply_text(
-            f"Оценка сохранена! Бар: {capitalize(bar)}, Пиво: {capitalize(beer)}, Оценка: {score}, Пользователь: {user}"
+            f"Оценка сохранена! Бар: {capitalize(bar)}, Пиво: {capitalize(beer)}, Оценка: {score}"
         )
         state["step"] = "beer"
         await update.message.reply_text("Введите название следующего пива или /bar для нового бара.")
