@@ -17,6 +17,15 @@ except ImportError:
 DATA_FILE = "/mnt/data/ratings.txt"
 user_states = {}
 
+async def zerorating(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+        with open(DATA_FILE, "w") as f:
+            f.write("")  # очищаем содержимое
+        await update.message.reply_text("Файл с рейтингами очищен.")
+    except Exception as e:
+        await update.message.reply_text(f"Ошибка при очистке файла: {e}")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Введите название бара:")
     user_states[update.effective_user.id] = {"step": "bar"}
@@ -91,5 +100,6 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("summary", summary))
+    app.add_handler(CommandHandler("zerorating", zerorating))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.run_polling()
