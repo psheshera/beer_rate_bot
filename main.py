@@ -57,10 +57,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         bar = state["bar"]
         beer = state["beer"]
+        user = update.effective_user.username or update.effective_user.first_name or "unknown"
 
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, "a") as f:
-            f.write(f"{bar};{beer};{score}\n")
+            f.write(f"{bar};{beer};{score}{user}\n")
 
         await update.message.reply_text(
             f"Оценка сохранена! Бар: {capitalize(bar)}, Пиво: {capitalize(beer)}, Оценка: {score}"
@@ -74,12 +75,16 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     ratings = defaultdict(lambda: defaultdict(list))
+    user_scores = defaultdict(list)
 
     with open(DATA_FILE, "r") as f:
         for line in f:
             try:
-                bar, beer, score = line.strip().split(";")
-                ratings[bar][beer].append(int(score))
+                bar, beer, score, user = line.strip().split(";")
+                score = int(score)
+                ratings[bar][beer].append(score)
+                user_scores[user].append(score
+
             except ValueError:
                 continue
 
@@ -93,6 +98,19 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for beer, scores in beers.items():
             avg = sum(scores) / len(scores)
             response += f"  - {capitalize(beer)}: {avg:.2f} (оценок: {len(scores)})\n"
+
+    
+    # 🏆 Пользователь с самой высокой средней оценкой
+    best_user = None
+    best_avg = -1
+    for user, scores in user_scores.items():
+        avg = sum(scores) / len(scores)
+        if avg > best_avg:
+            best_avg = avg
+            best_user = user
+
+    if best_user:
+        response += f"\n🏆 Пользователь с самой высокой средней оценкой: {best_user
 
     await update.message.reply_text(response)
 
